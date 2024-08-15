@@ -1,42 +1,116 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatting</title>
+    <title>AI 기반 Chatting</title>
     <style>
-        #messages { list-style-type: none; margin: 0; padding: 0; }
-        #messages li { padding: 5px 10px; }
-        #messages li:nth-child(odd) { background: #eee; }
-      </style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #202124;
+            color: #e8eaed;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .header {
+            background-color: #303134;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chat-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+        .message {
+            background-color: #303134;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            margin-bottom: 0.5rem;
+            max-width: 70%;
+        }
+        .user-message {
+            align-self: flex-end;
+            background-color: #8ab4f8;
+            color: #202124;
+        }
+        .input-container {
+            display: flex;
+            padding: 1rem;
+            background-color: #303134;
+        }
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 0.5rem;
+            border: none;
+            border-radius: 24px;
+            background-color: #404144;
+            color: #e8eaed;
+            margin-right: 0.5rem;
+        }
+        button {
+            background-color: #8ab4f8;
+            color: #202124;
+            border: none;
+            border-radius: 24px;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #aecbfa;
+        }
+    </style>
 </head>
 <body>
-    <ul id="messages"></ul>
-    <form id="chat-form">
-      <input id="chat-input" type="text" autocomplete="off" />
-      <button>Send</button>
-    </form>
-  
-    <script src="/socket.io/socket.io.js"></script>
+    <div class="header">
+        <h1>AI 기반 Chatting</h1>
+        <button onclick="leaveRoom()">나가기</button>
+    </div>
+    <div class="chat-container" id="chatContainer">
+        <!-- 채팅 메시지들이 여기에 동적으로 추가됩니다 -->
+    </div>
+    <div class="input-container">
+        <input type="text" id="messageInput" placeholder="메시지를 입력하세요...">
+        <button onclick="sendMessage()">전송</button>
+    </div>
+
     <script>
-      const socket = io();
-      const form = document.getElementById('chat-form');
-      const input = document.getElementById('chat-input');
-      const messages = document.getElementById('messages');
-  
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        if (input.value) {
-          socket.emit('chat message', input.value);
-          input.value = '';
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (message) {
+                addMessage(message, 'user-message');
+                input.value = '';
+                // 여기에 메시지 전송 로직을 추가하세요
+            }
         }
-      });
-  
-      socket.on('chat message', (msg) => {
-        const li = document.createElement('li');
-        li.textContent = msg;
-        messages.appendChild(li);
-      });
+
+        function addMessage(message, className) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', className);
+            messageElement.textContent = message;
+            chatContainer.appendChild(messageElement);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function leaveRoom() {
+            // 채팅방 나가기 로직을 여기에 구현하세요
+            alert('채팅방을 나갑니다.');
+            // 예: window.location.href = 'index.html';
+        }
+
+        // Enter 키로 메시지 전송
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
     </script>
 </body>
 </html>
