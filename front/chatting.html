@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ROOM NUMBER : </title>
+    <title>AI 기반 Chatting</title>
+    <script src="/socket.io/socket.io.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -64,45 +65,57 @@
         button:hover {
             background-color: #aecbfa;
         }
+        #chatContainer { height: 400px; overflow-y: scroll; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
-    <div class="header">
+    <header>
         <h1>AI 기반 Chatting</h1>
         <button onclick="leaveRoom()">나가기</button>
-    </div>
-    <div class="chat-container" id="chatContainer">
-        <!-- 채팅 메시지들이 여기에 동적으로 추가됩니다 -->
-    </div>
+    </header>
+
+    <div id="chatContainer"></div>
+
     <div class="input-container">
         <input type="text" id="messageInput" placeholder="메시지를 입력하세요...">
         <button onclick="sendMessage()">전송</button>
     </div>
 
     <script>
+        const socket = io();
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomId = urlParams.get('roomId');
+        const userName = urlParams.get('userName');
+
+        socket.emit('join room', { roomId, userName });
+
+        socket.on('user joined', (joinedUserName) => {
+            appendMessage(`${joinedUserName} 님이 입장하셨습니다.`);
+        });
+
+        socket.on('chat message', ({ userName, message }) => {
+            appendMessage(`${userName}: ${message}`);
+        });
+
         function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const message = input.value.trim();
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value;
             if (message) {
-                addMessage(message, 'user-message');
-                input.value = '';
-                // 여기에 메시지 전송 로직을 추가하세요
+                socket.emit('chat message', { roomId, userName, message });
+                messageInput.value = '';
             }
         }
 
-        function addMessage(message, className) {
+        function appendMessage(message) {
             const chatContainer = document.getElementById('chatContainer');
-            const messageElement = document.createElement('div');
-            messageElement.classList.add('message', className);
+            const messageElement = document.createElement('p');
             messageElement.textContent = message;
             chatContainer.appendChild(messageElement);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
         function leaveRoom() {
-            // 채팅방 나가기 로직을 여기에 구현하세요
-            alert('채팅방을 나갑니다.');
-            window.location.href = './index.html';
+            window.location.href = '/';
         }
 
         // Enter 키로 메시지 전송

@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 기반 Chatting</title>
+    <script src="/socket.io/socket.io.js"></script>
     <style>
-        body {
+         body {
             font-family: Arial, sans-serif;
             background-color: #202124;
             color: #e8eaed;
@@ -89,14 +90,15 @@
             border-color: #8ab4f8;
             box-shadow: 0 0 5px rgba(138, 180, 248, 0.5);
         }
+        .modal { display: none; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>AI 기반 Chatting</h1>
         <div class="button-group">
-            <button class="button" onclick="openModal('joinModal')">JOIN</button>
-            <button id="btn-create" class="button" onclick="openModal('createModal')">CREATE ROOM</button>
+            <button onclick="openModal('joinModal')">JOIN</button>
+            <button onclick="openModal('createModal')">CREATE ROOM</button>
         </div>
     </div>
 
@@ -104,12 +106,9 @@
         <div class="modal-content">
             <span class="close" onclick="closeModal('joinModal')">&times;</span>
             <h2>Join Room</h2>
-            <form id="'joinRoomForm" action="/join" method="POST">
-                <input type="text" placeholder="Room Number">
-                <input type="text" placeholder="User Name">
-                <!-- <button class="button" onclick="closeModal('joinModal')">JOIN</button> -->
-                <button type="submit" class="button">JOIN</button>
-            </form>
+            <input type="text" id="joinRoomId" placeholder="Room ID">
+            <input type="text" id="joinUserName" placeholder="Your Name">
+            <button onclick="joinRoom()">JOIN</button>
         </div>
     </div>
 
@@ -117,11 +116,8 @@
         <div class="modal-content">
             <span class="close" onclick="closeModal('createModal')">&times;</span>
             <h2>Create Room</h2>
-            <form id="createRoomForm" action="/create" method="POST">
-                <input type="text" name="userName" placeholder="User Name" required>
-                <!-- <button type="submit" class="button" onclick="closeModal('createModal')">CREATE</button> -->
-                <button type="submit" class="button">CREATE</button>
-            </form>
+            <input type="text" id="createUserName" placeholder="Your Name">
+            <button onclick="createRoom()">CREATE</button>
         </div>
     </div>
 
@@ -134,26 +130,36 @@
             document.getElementById(modalId).style.display = "none";
         }
 
-        document.getElementById('createRoomForm').addEventListener('submit', function(event) {
-            event.preventDefault(); // 폼 제출의 기본 동작을 막음
-
-            const userName = event.target.userName.value;
-
+        function createRoom() {
+            const userName = document.getElementById('createUserName').value;
             fetch('/create', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userName })
             })
             .then(response => response.json())
             .then(data => {
-                console.log(data);
-                closeModal('createModal'); // 모달 닫기
-                window.location.href = `/chat?room=${data.roomNum}`; // /chat 페이지로 리디렉션
+                window.location.href = `/chat?roomId=${data.roomId}&userName=${userName}`;
+            });
+        }
+
+        function joinRoom() {
+            const roomId = document.getElementById('joinRoomId').value;
+            const userName = document.getElementById('joinUserName').value;
+            fetch('/join', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roomId, userName })
             })
-            .catch(error => console.error('Error:', error));
-        });
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = `/chat?roomId=${roomId}&userName=${userName}`;
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
     </script>
 </body>
 </html>

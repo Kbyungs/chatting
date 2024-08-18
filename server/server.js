@@ -6,23 +6,18 @@ const path = require("path");
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "../front")));
 
-// 여기까지가 설정
+let rooms = {};
 
-let room_id = [];
-
-function generateRoomId(room_id) {
-  function getRandNum() {
-    const min = 100000;
-    const max = 999999;
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
+function generateRoomId() {
+  const min = 100000;
+  const max = 999999;
   let roomNumber;
   do {
-    roomNumber = getRandNum();
-  } while (room_id.includes(roomNumber));
-  // console.log(roomNumber);
-  return roomNumber;
+    roomNumber = Math.floor(Math.random() * (max - min + 1)) + min;
+  } while (roomNumber in rooms);
+  return roomNumber.toString();
 }
 
 app.get("/", (req, res) => {
@@ -34,37 +29,39 @@ app.get("/chat", (req, res) => {
 });
 
 app.post("/create", (req, res) => {
-  var roomNum = generateRoomId(room_id);
-  // console.log(JSON.stringify(req.body));
-  console.log(req.body);
-  console.log(`${roomNum} 번 방 생성`);
-  room_id.push(roomNum);
-  res.json({ roomNum });
-
-  io.on("connection", (socekt) => {
-    console.log(`${req.body.userName} connected`);
-
-    socket.on("chat message", (msg) => {
-      io.emit("chat msg", msg);
-    });
-
-    socket.on("disconnect", () => {
-      console.log(`${req.body.userName} disconnected`);
-    });
-  });
+  const roomId = generateRoomId();
+  const { userName } = req.body;
+  rooms[roomId] = { users: [userName] };
+  console.log(`Room ${roomId} created by ${userName}`);
+  res.json({ roomId, userName });
 });
 
 app.post("/join", (req, res) => {
-  io.on("connection", (socket) => {
-    console.log("user A connected");
+  const { roomId, userName } = req.body;
+  if (rooms[roomId]) {
+    rooms[roomId].users.push(userName);
+    console.log(`${userName} joined room ${roomId}`);
+    res.json({ success: true, roomId, userName });
+  } else {
+    res.status(404).json({ success: false, message: "Room not found" });
+  }
+});
 
-    socket.on("chat message", (msg) => {
-      io.emit("chat message", msg);
-    });
+io.on("connection", (socket) => {
+  console.log("New user connected");
 
-    socket.on("disconnect", () => {
-      console.log("user disconnected");
-    });
+  socket.on("join room", ({ roomId, userName }) => {
+    socket.join(roomId);
+    socket.to(roomId).emit("user joined", userName);
+    console.log(`${userName} joined room ${roomId}`);
+  });
+
+  socket.on("chat message", ({ roomId, userName, message }) => {
+    io.to(roomId).emit("chat message", { userName, message });
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected");
   });
 });
 
