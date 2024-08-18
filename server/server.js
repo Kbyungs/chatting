@@ -40,17 +40,31 @@ app.post("/create", (req, res) => {
   console.log(`${roomNum} 번 방 생성`);
   room_id.push(roomNum);
   res.json({ roomNum });
+
+  io.on("connection", (socekt) => {
+    console.log(`${req.body.userName} connected`);
+
+    socket.on("chat message", (msg) => {
+      io.emit("chat msg", msg);
+    });
+
+    socket.on("disconnect", () => {
+      console.log(`${req.body.userName} disconnected`);
+    });
+  });
 });
 
-io.on("connection", (socket) => {
-  console.log("user A connected");
+app.post("/join", (req, res) => {
+  io.on("connection", (socket) => {
+    console.log("user A connected");
 
-  socket.on("chat message", (msg) => {
-    io.emit("chat message", msg);
-  });
+    socket.on("chat message", (msg) => {
+      io.emit("chat message", msg);
+    });
 
-  socket.on("disconnect", () => {
-    console.log("user disconnected");
+    socket.on("disconnect", () => {
+      console.log("user disconnected");
+    });
   });
 });
 

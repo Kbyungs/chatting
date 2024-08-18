@@ -104,10 +104,11 @@
         <div class="modal-content">
             <span class="close" onclick="closeModal('joinModal')">&times;</span>
             <h2>Join Room</h2>
-            <form action="">
+            <form id="'joinRoomForm" action="/join" method="POST">
                 <input type="text" placeholder="Room Number">
                 <input type="text" placeholder="User Name">
-                <button class="button" onclick="closeModal('joinModal')">JOIN</button>
+                <!-- <button class="button" onclick="closeModal('joinModal')">JOIN</button> -->
+                <button type="submit" class="button">JOIN</button>
             </form>
         </div>
     </div>
