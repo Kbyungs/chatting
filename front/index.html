@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 기반 Chatting</title>
+    <title>CHAT</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         body {
@@ -90,11 +90,29 @@
             border-color: #8ab4f8;
             box-shadow: 0 0 5px rgba(138, 180, 248, 0.5);
         }
+        footer {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #202124;
+            color: #6c757d;
+            text-align: center;
+            padding: 20px;
+            margin-top: auto;
+        }
+        footer a {
+            color: #6c757d;
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>AI 기반 Chatting</h1>
+        <h1 id="title">Realtime Chatting</h1>
         <div class="button-group">
             <button class="button" onclick="openModal('joinModal')">JOIN</button>
             <button class="button" onclick="openModal('createModal')">CREATE ROOM</button>
@@ -121,6 +139,21 @@
     </div>
 
     <script>
+        let isCtrlPressed = false;
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Control') {
+                isCtrlPressed = true;
+                document.getElementById("title").innerText="SECRET Chatting";
+            }
+        });
+    
+        document.addEventListener('keyup', function(e) {
+            if (e.key === 'Control') {
+                isCtrlPressed = false;
+                document.getElementById("title").innerText="Realtime Chatting";
+            }
+        });
+
         function openModal(modalId) {
             document.getElementById(modalId).style.display = "block";
         }
@@ -160,5 +193,10 @@
             });
         }
     </script>
+    <footer>
+        <a href="https://github.com/Kbyungs/chatting">this project's github</a></br>
+        <span>made by 강병수</span></br>
+        <span>email : jasonkbs@naver.com</span>
+    </footer>
 </body>
 </html>
