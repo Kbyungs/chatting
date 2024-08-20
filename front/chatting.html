@@ -82,56 +82,107 @@
         <!-- 채팅 메시지들이 여기에 동적으로 추가됩니다 -->
     </div>
     <div class="input-container">
-        <input type="text" id="messageInput" placeholder="메시지를 입력하세요...">
+        <input type="text" id="messageInput" placeholder="메시지를 입력하세요">
         <button onclick="sendMessage()">전송</button>
     </div>
+    <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         const urlParams = new URLSearchParams(window.location.search);
         const roomId = urlParams.get('roomId');
         const userName = urlParams.get('userName');
-
+    
         document.title = `ROOM NUMBER : ${roomId}`;
         document.getElementById('roomNumberDisplay').textContent = `ROOM NUMBER : ${roomId}`;
-
+    
         socket.emit('join room', { roomId, userName });
-
+    
         socket.on('user joined', (joinedUserName) => {
             addMessage(`${joinedUserName} 님이 입장하셨습니다.`, 'system-message');
         });
-
+    
         socket.on('user left', (leftUserName) => {
             addMessage(`${leftUserName} 님이 퇴장하셨습니다.`, 'system-message');
         });
-
-        socket.on('chat message', ({ userName: msgUserName, message }) => {
+    
+        socket.on('chat message', ({ userName: msgUserName, message, originalMessage }) => {
             const className = msgUserName === userName ? 'user-message' : 'message';
-            addMessage(`${msgUserName}: ${message}`, className);
+            addMessage(`${msgUserName}: ${message}`, className, originalMessage);
         });
-
+    
+        let isCtrlPressed = false;
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Control') {
+                isCtrlPressed = true;
+                showOriginalMessages();
+            }
+        });
+    
+        document.addEventListener('keyup', function(e) {
+            if (e.key === 'Control') {
+                isCtrlPressed = false;
+                hideOriginalMessages();
+            }
+        });
+    
         function sendMessage() {
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
             if (message) {
-                socket.emit('chat message', { roomId, userName, message });
+                socket.emit('chat message', { roomId, userName, message, isCtrlPressed });
                 input.value = '';
             }
         }
-
-        function addMessage(message, className) {
+    
+        function addMessage(message, className, originalMessage) {
             const chatContainer = document.getElementById('chatContainer');
             const messageElement = document.createElement('div');
             messageElement.classList.add('message', className);
-            messageElement.textContent = message;
+            
+            if (className === 'system-message') {
+                messageElement.textContent = message;
+            } else {
+                const [userName, messageContent] = message.split(' : ');
+                messageElement.innerHTML = `
+                    <span class="user-name">${userName}: </span>
+                    <span class="processed-message">${messageContent}</span>
+                    <span class="original-message" style="display: none;">${originalMessage}</span>
+                `;
+            }
+            
             chatContainer.appendChild(messageElement);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
+    
+        function showOriginalMessages() {
+            const messages = document.querySelectorAll('.message:not(.system-message)');
+            messages.forEach(msg => {
+                const processedMessage = msg.querySelector('.processed-message');
+                const originalMessage = msg.querySelector('.original-message');
+                if (processedMessage && originalMessage) {
+                    processedMessage.style.display = 'none';
+                    originalMessage.style.display = 'inline';
+                }
+            });
+        }
 
+        function hideOriginalMessages() {
+            const messages = document.querySelectorAll('.message:not(.system-message)');
+            messages.forEach(msg => {
+                const processedMessage = msg.querySelector('.processed-message');
+                const originalMessage = msg.querySelector('.original-message');
+                if (processedMessage && originalMessage) {
+                    processedMessage.style.display = 'inline';
+                    originalMessage.style.display = 'none';
+                }
+            });
+        }
+    
         function leaveRoom() {
             socket.emit('leave room', { roomId, userName });
             window.location.href = '/';
         }
-
+    
         document.getElementById('messageInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 sendMessage();

@@ -4,11 +4,21 @@ const http = require("http").createServer(app);
 const io = require("socket.io")(http);
 const path = require("path");
 
+const OpenAI = require("openai");
+const dotenv = require("dotenv");
+
+dotenv.config();
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "../front")));
 
 let rooms = {};
+let previousMessages = {};
 
 function generateRoomId() {
   const min = 100000;
@@ -66,9 +76,45 @@ io.on("connection", (socket) => {
     console.log(`${userName} joined room ${roomId}`);
   });
 
-  socket.on("chat message", ({ roomId, userName, message }) => {
-    io.to(roomId).emit("chat message", { userName, message });
-  });
+  socket.on(
+    "chat message",
+    async ({ roomId, userName, message, isCtrlPressed }) => {
+      let processedMessage = message;
+
+      if (!isCtrlPressed) {
+        try {
+          const previousMessage = previousMessages[roomId] || "";
+          const response = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+              {
+                role: "system",
+                content:
+                  "당신은 일상적인 한국어 대화를 생성하는 도우미입니다. 이전 메시지에 대한 자연스러운 대답을 한 문장 정도로 만들어주세요. 대화의 내용은 원래 메시지와 전혀 관련이 없어야 하며, 자연스러운 한국어로 작성되어야 합니다. 번역이나 원래 메시지에 대한 언급은 포함하지 마세요.",
+              },
+              {
+                role: "user",
+                content: `이전 메시지: ${previousMessage}\n\n이 메시지에 대한 자연스러운 대답을 작성해주세요.`,
+              },
+            ],
+            temperature: 0.7,
+            max_tokens: 64,
+            top_p: 1,
+          });
+          processedMessage = response.choices[0].message.content;
+          previousMessages[roomId] = processedMessage;
+        } catch (error) {
+          console.error("Error calling OpenAI API:", error);
+        }
+      }
+
+      io.to(roomId).emit("chat message", {
+        userName,
+        message: processedMessage,
+        originalMessage: message,
+      });
+    }
+  );
 
   socket.on("leave room", ({ roomId, userName }) => {
     socket.leave(roomId);
