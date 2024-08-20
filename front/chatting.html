@@ -142,7 +142,7 @@
             if (className === 'system-message') {
                 messageElement.textContent = message;
             } else {
-                const [userName, messageContent] = message.split(' : ');
+                const [userName, messageContent] = message.split(': ');
                 messageElement.innerHTML = `
                     <span class="user-name">${userName}: </span>
                     <span class="processed-message">${messageContent}</span>
